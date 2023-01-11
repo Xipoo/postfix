@@ -1,3 +1,4 @@
+version: '3.9'
 services:
   mailserver:
     image: docker.io/mailserver/docker-mailserver:latest
@@ -17,7 +18,6 @@ services:
       - ./docker-data/dms/mail-logs/:/var/log/mail/
       - ./docker-data/dms/config/:/tmp/docker-mailserver/
       - /etc/localtime:/etc/localtime:ro
-    restart: always
     stop_grace_period: 1m
     cap_add:
       - NET_ADMIN
@@ -25,6 +25,9 @@ services:
       test: "ss --listening --tcp | grep -P 'LISTEN.+:smtp' || exit 1"
       timeout: 3s
       retries: 0
+    networks:
+      mainnet:
+        ipv4_address: ${MAILSERVER_IP}
   db:
     image: mysql:latest
     container_name: mysql
@@ -33,6 +36,9 @@ services:
       - MYSQL_DATABASE=roundcube
       - MYSQL_USER=roundcube
       - MYSQL_PASSWORD=roundcube
+    networks:
+      mainnet:
+        ipv4_address: ${DB_IP}
   roundcube:
     image: roundcubeorg/roundcubemail:latest-apache
     container_name: roundcube
@@ -48,3 +54,14 @@ services:
       - ROUNDCUBEMAIL_DB_NAME=roundcube
       - ROUNDCUBEMAIL_DEFAULT_HOST=mailserver
       - ROUNDCUBEMAIL_SMTP_SERVER=mailserver
+    networks:
+      mainnet:
+        ipv4_address: ${ROUNDCUBE_IP}
+
+networks:
+  mainnet:
+    name: mainnet_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.168.10.0/24
